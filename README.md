@@ -1,32 +1,45 @@
-# Log In With Amazon
+# Log In With MediaWiki
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) [![Latest Stable Version](https://img.shields.io/packagist/v/ianm/oauth-amazon.svg)](https://packagist.org/packages/ianm/oauth-amazon) [![Total Downloads](https://img.shields.io/packagist/dt/ianm/oauth-amazon.svg)](https://packagist.org/packages/ianm/oauth-amazon)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) [![Latest Stable Version](https://img.shields.io/packagist/v/songnguxyz/oauth-mediawiki.svg)](https://packagist.org/packages/songnguxyz/oauth-mediawiki) [![Total Downloads](https://img.shields.io/packagist/dt/songnguxyz/oauth-mediawiki.svg)](https://packagist.org/packages/songnguxyz/oauth-mediawiki)
 
-![](https://extiverse.com/extension/ianm/oauth-amazon/open-graph-image)
+Log in to your Flarum forum with MediaWiki OAuth2. An addon for [FoF OAuth](https://github.com/friendsofflarum/oauth)
 
-Log in to your Flarum forum with Amazon. An addon for [FoF OAuth](https://github.com/friendsofflarum/oauth)
+This extension allows users to authenticate with any MediaWiki installation that has OAuth2 enabled (MediaWiki 1.35+).
 
 ## Installation
 
 Install with composer:
 
 ```sh
-composer require ianm/oauth-amazon
+composer require songnguxyz/oauth-mediawiki
 ```
 
 ## Updating
 
 ```sh
-composer update ianm/oauth-amazon
+composer update songnguxyz/oauth-mediawiki
 ```
 
 ## Setup
-1) Register your site with [Amazon](https://developer.amazon.com/docs/login-with-amazon/register-web.html) and obtain your unique `client_id` and `client_secret`
-2) Once you have created your security profile for your forum, go to `Web Settings` and enter the redirect URL as provided in this extension's settings page.
-3) Log in with Amazon!
+
+1) Enable the OAuth extension on your MediaWiki installation. See [MediaWiki OAuth documentation](https://www.mediawiki.org/wiki/OAuth/For_Developers) for details.
+
+2) Register an OAuth2 consumer on your MediaWiki:
+   - Go to `Special:OAuthConsumerRegistration/propose` on your wiki
+   - Select "OAuth 2.0" as the OAuth protocol version
+   - Fill in the required details including the callback URL from your Flarum OAuth settings
+   - Request the necessary grants (at minimum: `mwoauth-authonly` for authentication)
+   - Note down the `client_id` and `client_secret` provided
+
+3) In your Flarum admin panel, enable this extension and configure:
+   - **MediaWiki Base URL**: Your MediaWiki REST API base URL (e.g., `https://yourwiki.example.com/w/rest.php`)
+   - **Client ID**: The client ID from step 2
+   - **Client Secret**: The client secret from step 2
+
+4) Log in with MediaWiki!
 
 ## Links
 
-- [Packagist](https://packagist.org/packages/ianm/oauth-amazon)
-- [GitHub](https://github.com/imorland/flarum-ext-oauth-amazon)
-- [Discuss](https://discuss.flarum.org/d/29191)
+- [Packagist](https://packagist.org/packages/songnguxyz/oauth-mediawiki)
+- [GitHub](https://github.com/songnguxyz/flarum-ext-oauth-mediawiki)
+- [MediaWiki OAuth Documentation](https://www.mediawiki.org/wiki/OAuth/For_Developers)

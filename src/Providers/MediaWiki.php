@@ -1,42 +1,43 @@
 <?php
 
 /*
- * This file is part of ianm/oauth-amazon.
+ * This file is part of songnguxyz/oauth-mediawiki.
  *
- * Copyright (c) 2021 IanM.
+ * Copyright (c) 2024 songnguxyz.
  *
  *  For the full copyright and license information, please view the LICENSE.md
  *  file that was distributed with this source code.
  */
 
-namespace IanM\OAuthAmazon\Providers;
+namespace Songnguxyz\OAuthMediaWiki\Providers;
 
 use Flarum\Forum\Auth\Registration;
 use FoF\OAuth\Provider;
 use League\OAuth2\Client\Provider\AbstractProvider;
-use Luchianenco\OAuth2\Client\Provider\Amazon as AmazonProvider;
-use Luchianenco\OAuth2\Client\Provider\AmazonResourceOwner;
+use Songnguxyz\OAuthMediaWiki\OAuth2\MediaWikiProvider;
+use Songnguxyz\OAuthMediaWiki\OAuth2\MediaWikiResourceOwner;
 
-class Amazon extends Provider
+class MediaWiki extends Provider
 {
     /**
-     * @var AmazonProvider
+     * @var MediaWikiProvider
      */
     protected $provider;
 
     public function name(): string
     {
-        return 'amazon';
+        return 'mediawiki';
     }
 
     public function link(): string
     {
-        return 'https://developer.amazon.com/docs/login-with-amazon/register-web.html';
+        return 'https://www.mediawiki.org/wiki/OAuth/For_Developers';
     }
 
     public function fields(): array
     {
         return [
+            'base_url'      => 'required',
             'client_id'     => 'required',
             'client_secret' => 'required',
         ];
@@ -44,19 +45,26 @@ class Amazon extends Provider
 
     public function provider(string $redirectUri): AbstractProvider
     {
-        return $this->provider = new AmazonProvider([
+        return $this->provider = new MediaWikiProvider([
+            'baseUrl'      => $this->getSetting('base_url'),
             'clientId'     => $this->getSetting('client_id'),
             'clientSecret' => $this->getSetting('client_secret'),
             'redirectUri'  => $redirectUri,
         ]);
     }
 
+    public function options(): array
+    {
+        return ['scope' => []];
+    }
+
     public function suggestions(Registration $registration, $user, string $token)
     {
-        /** @var AmazonResourceOwner $user */
+        /** @var MediaWikiResourceOwner $user */
         $this->verifyEmail($email = $user->getEmail());
 
         $registration
+            ->suggestUsername($user->getUsername())
             ->provideTrustedEmail($email)
             ->setPayload($user->toArray());
     }
