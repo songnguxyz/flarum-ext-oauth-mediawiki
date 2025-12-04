@@ -32,7 +32,7 @@ composer update songnguxyz/oauth-mediawiki
    - Note down the `client_id` and `client_secret` provided
 
 3) In your Flarum admin panel, enable this extension and configure:
-   - **MediaWiki Base URL**: Your MediaWiki REST API base URL (e.g., `https://yourwiki.example.com/w/rest.php`)
+   - **MediaWiki Base URL**: Your MediaWiki REST API base URL (e.g., `https://yourwiki.example.com/w/rest.php`). This is the URL where the OAuth2 endpoints are available.
    - **Client ID**: The client ID from step 2
    - **Client Secret**: The client secret from step 2
 
