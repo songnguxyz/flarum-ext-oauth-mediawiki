@@ -1,39 +1,38 @@
 {
-    "name": "ianm/oauth-amazon",
-    "description": "Log in to your Flarum forum with Amazon",
+    "name": "songnguxyz/oauth-mediawiki",
+    "description": "Log in to your Flarum forum with MediaWiki OAuth2",
     "keywords": [
-        "flarum", "amazon", "sso", "oauth", "login"
+        "flarum", "mediawiki", "sso", "oauth", "login", "oauth2"
     ],
     "type": "flarum-extension",
     "license": "MIT",
     "support": {
-        "issues": "https://github.com/imorland/flarum-ext-oauth-amazon/issues",
-        "source": "https://github.com/imorland/flarum-ext-oauth-amazon",
-        "forum": "https://discuss.flarum.org/d/29191"
+        "issues": "https://github.com/songnguxyz/flarum-ext-oauth-mediawiki/issues",
+        "source": "https://github.com/songnguxyz/flarum-ext-oauth-mediawiki"
     },
     "require": {
         "flarum/core": "^1.2.0",
         "fof/oauth": "^1.3.0",
-        "luchianenco/oauth2-amazon": "^2.0"
+        "league/oauth2-client": "^2.6"
     },
     "authors": [
         {
-            "name": "IanM",
-            "homepage": "https://discuss.flarum.org/u/ianm"
+            "name": "songnguxyz",
+            "homepage": "https://github.com/songnguxyz"
         }
     ],
     "autoload": {
         "psr-4": {
-            "IanM\\OAuthAmazon\\": "src/"
+            "Songnguxyz\\OAuthMediaWiki\\": "src/"
         }
     },
     "extra": {
         "flarum-extension": {
-            "title": "Log In With Amazon",
+            "title": "Log In With MediaWiki",
             "category": "feature",
             "icon": {
-                "name": "fab fa-amazon",
-                "backgroundColor": "#0072e3",
+                "name": "fab fa-wikipedia-w",
+                "backgroundColor": "#006699",
                 "color": "#fff"
             }
         }
