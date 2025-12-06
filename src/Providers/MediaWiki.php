@@ -34,6 +34,11 @@ class MediaWiki extends Provider
         return 'https://www.mediawiki.org/wiki/OAuth/For_Developers';
     }
 
+    public function icon(): string
+    {
+        return 'fab fa-wikipedia-w';
+    }
+
     public function fields(): array
     {
         return [
