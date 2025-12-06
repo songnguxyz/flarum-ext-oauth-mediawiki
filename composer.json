@@ -31,7 +31,7 @@
             "title": "Log In With MediaWiki",
             "category": "feature",
             "icon": {
-                "name": "fa-wikipedia-w",
+                "name": "fab fa-wikipedia-w",
                 "backgroundColor": "#006699",
                 "color": "#fff"
             }
