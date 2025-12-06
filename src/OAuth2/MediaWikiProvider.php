@@ -43,7 +43,7 @@ class MediaWikiProvider extends AbstractProvider
             $this->baseUrl = rtrim($options['baseUrl'], '/');
         }
 
-        if (isset($options['userAgent']) && !empty($options['userAgent'])) {
+        if (!empty($options['userAgent'])) {
             $this->userAgent = $options['userAgent'];
         }
     }
