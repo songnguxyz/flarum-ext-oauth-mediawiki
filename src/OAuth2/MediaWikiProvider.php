@@ -27,6 +27,11 @@ class MediaWikiProvider extends AbstractProvider
     protected $baseUrl;
 
     /**
+     * @var string|null
+     */
+    protected $userAgent;
+
+    /**
      * @param array $options
      * @param array $collaborators
      */
@@ -36,6 +41,10 @@ class MediaWikiProvider extends AbstractProvider
 
         if (isset($options['baseUrl'])) {
             $this->baseUrl = rtrim($options['baseUrl'], '/');
+        }
+
+        if (!empty($options['userAgent'])) {
+            $this->userAgent = $options['userAgent'];
         }
     }
 
@@ -110,5 +119,21 @@ class MediaWikiProvider extends AbstractProvider
     protected function createResourceOwner(array $response, AccessToken $token)
     {
         return new MediaWikiResourceOwner($response);
+    }
+
+    /**
+     * Returns the default headers used by this provider.
+     *
+     * @return array
+     */
+    protected function getDefaultHeaders()
+    {
+        $headers = parent::getDefaultHeaders();
+
+        if ($this->userAgent !== null) {
+            $headers['User-Agent'] = $this->userAgent;
+        }
+
+        return $headers;
     }
 }

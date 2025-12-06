@@ -40,6 +40,7 @@ class MediaWiki extends Provider
             'base_url'      => 'required',
             'client_id'     => 'required',
             'client_secret' => 'required',
+            'user_agent'    => '',
         ];
     }
 
@@ -50,6 +51,7 @@ class MediaWiki extends Provider
             'clientId'     => $this->getSetting('client_id'),
             'clientSecret' => $this->getSetting('client_secret'),
             'redirectUri'  => $redirectUri,
+            'userAgent'    => $this->getSetting('user_agent'),
         ]);
     }
 
