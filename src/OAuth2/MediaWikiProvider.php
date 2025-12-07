@@ -139,8 +139,18 @@ class MediaWikiProvider extends AbstractProvider
     {
         try {
             // Construct the MediaWiki API URL for userinfo query
-            // Remove /rest.php from baseUrl if present, then add /api.php
-            $apiUrl = preg_replace('#/rest\.php$#', '', $this->baseUrl) . '/api.php';
+            // The baseUrl typically points to /rest.php, we need /api.php instead
+            $apiUrl = $this->baseUrl;
+            
+            // Handle different base URL formats
+            if (strpos($apiUrl, '/rest.php') !== false) {
+                $apiUrl = str_replace('/rest.php', '/api.php', $apiUrl);
+            } elseif (substr($apiUrl, -1) === '/') {
+                $apiUrl .= 'api.php';
+            } else {
+                // Assume the base URL points to the wiki root
+                $apiUrl .= '/api.php';
+            }
             
             $url = $apiUrl . '?' . http_build_query([
                 'action' => 'query',
@@ -162,9 +172,12 @@ class MediaWikiProvider extends AbstractProvider
                     'blockreason' => $userinfo['blockreason'] ?? null,
                 ];
             }
+        } catch (IdentityProviderException $e) {
+            // Authentication or API errors - log but don't fail
+            // Note: In production, this should be logged for debugging
         } catch (\Exception $e) {
-            // If we can't fetch block info, continue without it
-            // Log the error if needed, but don't fail the authentication
+            // Other errors - log but don't fail authentication
+            // Note: In production, this should be logged for debugging
         }
         
         return null;
