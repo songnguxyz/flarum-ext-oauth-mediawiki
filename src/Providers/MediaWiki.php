@@ -76,6 +76,8 @@ class MediaWiki extends Provider
             $reason = $user->getBlockReason();
             
             // If we have detailed block information, build a detailed message
+            // Note: The error message will be automatically escaped by Blade's {{ }} syntax
+            // when rendered in the error template, preventing XSS attacks
             if ($expiry || $reason) {
                 $message = 'Your MediaWiki account has been blocked and you cannot log in to this forum.';
                 
@@ -89,7 +91,7 @@ class MediaWiki extends Provider
                     $message .= ' Reason: ' . $reason;
                 }
             } else {
-                // Use the simple error code that will be translated
+                // Use the simple error code that will be translated via locale
                 $message = 'wiki_user_blocked';
             }
             
