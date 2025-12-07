@@ -118,7 +118,56 @@ class MediaWikiProvider extends AbstractProvider
      */
     protected function createResourceOwner(array $response, AccessToken $token)
     {
+        // Fetch block information from MediaWiki API
+        $blockInfo = $this->fetchBlockInfo($token);
+        
+        // Merge block information into the response
+        if ($blockInfo !== null) {
+            $response = array_merge($response, $blockInfo);
+        }
+        
         return new MediaWikiResourceOwner($response);
+    }
+    
+    /**
+     * Fetch block information for the authenticated user from MediaWiki API.
+     *
+     * @param AccessToken $token
+     * @return array|null
+     */
+    protected function fetchBlockInfo(AccessToken $token)
+    {
+        try {
+            // Construct the MediaWiki API URL for userinfo query
+            // Remove /rest.php from baseUrl if present, then add /api.php
+            $apiUrl = preg_replace('#/rest\.php$#', '', $this->baseUrl) . '/api.php';
+            
+            $url = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'meta' => 'userinfo',
+                'uiprop' => 'blockinfo',
+                'format' => 'json',
+            ]);
+            
+            $request = $this->getAuthenticatedRequest('GET', $url, $token);
+            $response = $this->getParsedResponse($request);
+            
+            // Extract block information from the response
+            if (isset($response['query']['userinfo'])) {
+                $userinfo = $response['query']['userinfo'];
+                
+                return [
+                    'blocked' => isset($userinfo['blockid']),
+                    'blockexpiry' => $userinfo['blockexpiry'] ?? null,
+                    'blockreason' => $userinfo['blockreason'] ?? null,
+                ];
+            }
+        } catch (\Exception $e) {
+            // If we can't fetch block info, continue without it
+            // Log the error if needed, but don't fail the authentication
+        }
+        
+        return null;
     }
 
     /**
