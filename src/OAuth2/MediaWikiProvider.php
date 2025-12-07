@@ -139,18 +139,28 @@ class MediaWikiProvider extends AbstractProvider
     {
         try {
             // Construct the MediaWiki API URL for userinfo query
-            // The baseUrl typically points to /rest.php, we need /api.php instead
-            $apiUrl = $this->baseUrl;
+            // Parse the base URL to properly construct the API endpoint
+            $parsedUrl = parse_url($this->baseUrl);
             
-            // Handle different base URL formats
-            if (strpos($apiUrl, '/rest.php') !== false) {
-                $apiUrl = str_replace('/rest.php', '/api.php', $apiUrl);
-            } elseif (substr($apiUrl, -1) === '/') {
-                $apiUrl .= 'api.php';
-            } else {
-                // Assume the base URL points to the wiki root
-                $apiUrl .= '/api.php';
+            if ($parsedUrl === false) {
+                return null;
             }
+            
+            // Build the base path
+            $path = $parsedUrl['path'] ?? '';
+            
+            // Replace /rest.php with /api.php if present, otherwise append /api.php
+            if (strpos($path, '/rest.php') !== false) {
+                $path = str_replace('/rest.php', '/api.php', $path);
+            } else {
+                $path = rtrim($path, '/') . '/api.php';
+            }
+            
+            // Reconstruct the URL
+            $apiUrl = ($parsedUrl['scheme'] ?? 'https') . '://' 
+                    . ($parsedUrl['host'] ?? '') 
+                    . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '')
+                    . $path;
             
             $url = $apiUrl . '?' . http_build_query([
                 'action' => 'query',
@@ -173,11 +183,15 @@ class MediaWikiProvider extends AbstractProvider
                 ];
             }
         } catch (IdentityProviderException $e) {
-            // Authentication or API errors - log but don't fail
-            // Note: In production, this should be logged for debugging
+            // Authentication or API errors
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check failed: ' . $e->getMessage());
         } catch (\Exception $e) {
-            // Other errors - log but don't fail authentication
-            // Note: In production, this should be logged for debugging
+            // Other errors
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
         }
         
         return null;
