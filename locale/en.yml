@@ -1,25 +1,27 @@
 fof-oauth:
-  admin:
-    settings:
-      providers:
-        mediawiki:
-          description: Configure your MediaWiki OAuth2 application. See the documentation at {link}
+    admin:
+        settings:
+            providers:
+                mediawiki:
+                    description: Configure your MediaWiki OAuth2 application. 
+                        See the documentation at {link}
 
-          base_url_label: MediaWiki Base URL
-          client_id_label: => fof-oauth.ref.settings.client_id
-          client_secret_label: => fof-oauth.ref.settings.client_secret
-          user_agent_label: User Agent
+                    base_url_label: MediaWiki Base URL
+                    client_id_label: Client Key
+                    client_secret_label: => fof-oauth.ref.settings.client_secret
+                    user_agent_label: User Agent
 
-  forum:
-    log_in:
-      with_mediawiki_button: '=> fof-oauth.forum.log_in.with_button'
+    forum:
+        log_in:
+            with_mediawiki_button: '=> fof-oauth.forum.log_in.with_button'
 
-    error:
-      wiki_user_blocked: Your MediaWiki account has been blocked and you cannot log in to this forum.
+        error:
+            wiki_user_blocked: Your MediaWiki account has been blocked and you 
+                cannot log in to this forum.
 
-    providers:
-      mediawiki: '=> fof-oauth.lib.providers.mediawiki'
+        providers:
+            mediawiki: '=> fof-oauth.lib.providers.mediawiki'
 
-  lib:
-    providers:
-      mediawiki: MediaWiki
+    lib:
+        providers:
+            mediawiki: MediaWiki
