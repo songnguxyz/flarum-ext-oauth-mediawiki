@@ -12,12 +12,15 @@ Install with composer:
 
 ```sh
 composer require songnguxyz/oauth-mediawiki
+php flarum migrate
+php flarum cache:clear
 ```
 
 ## Updating
 
 ```sh
 composer update songnguxyz/oauth-mediawiki
+php flarum cache:clear
 ```
 
 ## Setup
