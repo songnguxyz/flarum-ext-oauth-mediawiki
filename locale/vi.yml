@@ -3,23 +3,25 @@ fof-oauth:
         settings:
             providers:
                 mediawiki:
-                    description: ''
+                    description: 'Thiết lập đăng nhập MediaWiki thông qua OAuth2 tại
+                        đây. Xem tài liệu tại {link}'
 
-                    base_url_label: ''
-                    client_id_label: ''
-                    client_secret_label: ''
-                    user_agent_label: ''
+                    base_url_label: 'Liên kết Rest API MediaWiki'
+                    client_id_label: 'Khóa tiêu dùng (Client Key)'
+                    client_secret_label: 'Khóa bí mật (Client Secret)'
+                    user_agent_label: 'Tác nhân người dùng (User Agent)'
 
     forum:
         log_in:
-            with_mediawiki_button: ''
+            with_mediawiki_button: 'Đăng nhập với'
 
         error:
-            wiki_user_blocked: ''
+            wiki_user_blocked: 'Tài khoản MediaWiki của bạn đã bị cấm và không được
+                phép đăng nhập vào trang này.'
 
         providers:
-            mediawiki: ''
+            mediawiki: 'MediaWiki'
 
     lib:
         providers:
-            mediawiki: ''
+            mediawiki: 'MediaWiki'
