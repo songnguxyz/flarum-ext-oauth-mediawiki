@@ -12,6 +12,7 @@
 namespace Songnguxyz\OAuthMediaWiki\Providers;
 
 use Flarum\Forum\Auth\Registration;
+use FoF\OAuth\Errors\AuthenticationException;
 use FoF\OAuth\Provider;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use Songnguxyz\OAuthMediaWiki\OAuth2\MediaWikiProvider;
@@ -68,6 +69,35 @@ class MediaWiki extends Provider
     public function suggestions(Registration $registration, $user, string $token)
     {
         /** @var MediaWikiResourceOwner $user */
+        
+        // Check if the user is blocked in the wiki
+        if ($user->isBlocked()) {
+            $expiry = $user->getBlockExpiry();
+            $reason = $user->getBlockReason();
+            
+            // If we have detailed block information, build a detailed message
+            // Note: The error message will be automatically escaped by Blade's {{ }} syntax
+            // when rendered in the error template, preventing XSS attacks
+            if ($expiry || $reason) {
+                $message = 'Your MediaWiki account has been blocked and you cannot log in to this forum.';
+                
+                if ($expiry) {
+                    $message .= ' Expires: ' . $expiry . '.';
+                } else {
+                    $message .= ' This block is indefinite.';
+                }
+                
+                if ($reason) {
+                    $message .= ' Reason: ' . $reason;
+                }
+            } else {
+                // Use the simple error code that will be translated via locale
+                $message = 'wiki_user_blocked';
+            }
+            
+            throw new AuthenticationException($message);
+        }
+        
         $this->verifyEmail($email = $user->getEmail());
 
         $registration

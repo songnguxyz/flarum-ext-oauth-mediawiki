@@ -129,6 +129,26 @@ class MediaWikiResourceOwner implements ResourceOwnerInterface
     }
 
     /**
+     * Returns the block expiry time.
+     *
+     * @return string|null
+     */
+    public function getBlockExpiry()
+    {
+        return $this->response['blockexpiry'] ?? null;
+    }
+
+    /**
+     * Returns the block reason.
+     *
+     * @return string|null
+     */
+    public function getBlockReason()
+    {
+        return $this->response['blockreason'] ?? null;
+    }
+
+    /**
      * Returns the registration date of the resource owner.
      *
      * @return string|null

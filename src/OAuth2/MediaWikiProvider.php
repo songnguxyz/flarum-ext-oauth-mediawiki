@@ -118,7 +118,83 @@ class MediaWikiProvider extends AbstractProvider
      */
     protected function createResourceOwner(array $response, AccessToken $token)
     {
+        // Fetch block information from MediaWiki API
+        $blockInfo = $this->fetchBlockInfo($token);
+        
+        // Merge block information into the response
+        if ($blockInfo !== null) {
+            $response = array_merge($response, $blockInfo);
+        }
+        
         return new MediaWikiResourceOwner($response);
+    }
+    
+    /**
+     * Fetch block information for the authenticated user from MediaWiki API.
+     *
+     * @param AccessToken $token
+     * @return array|null
+     */
+    protected function fetchBlockInfo(AccessToken $token)
+    {
+        try {
+            // Construct the MediaWiki API URL for userinfo query
+            // Parse the base URL to properly construct the API endpoint
+            $parsedUrl = parse_url($this->baseUrl);
+            
+            if ($parsedUrl === false) {
+                return null;
+            }
+            
+            // Build the base path
+            $path = $parsedUrl['path'] ?? '';
+            
+            // Replace /rest.php with /api.php if present, otherwise append /api.php
+            if (strpos($path, '/rest.php') !== false) {
+                $path = str_replace('/rest.php', '/api.php', $path);
+            } else {
+                $path = rtrim($path, '/') . '/api.php';
+            }
+            
+            // Reconstruct the URL
+            $apiUrl = ($parsedUrl['scheme'] ?? 'https') . '://' 
+                    . ($parsedUrl['host'] ?? '') 
+                    . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '')
+                    . $path;
+            
+            $url = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'meta' => 'userinfo',
+                'uiprop' => 'blockinfo',
+                'format' => 'json',
+            ]);
+            
+            $request = $this->getAuthenticatedRequest('GET', $url, $token);
+            $response = $this->getParsedResponse($request);
+            
+            // Extract block information from the response
+            if (isset($response['query']['userinfo'])) {
+                $userinfo = $response['query']['userinfo'];
+                
+                return [
+                    'blocked' => isset($userinfo['blockid']),
+                    'blockexpiry' => $userinfo['blockexpiry'] ?? null,
+                    'blockreason' => $userinfo['blockreason'] ?? null,
+                ];
+            }
+        } catch (IdentityProviderException $e) {
+            // Authentication or API errors
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check failed: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            // Other errors
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
+        }
+        
+        return null;
     }
 
     /**
