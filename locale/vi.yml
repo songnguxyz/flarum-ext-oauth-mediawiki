@@ -10,6 +10,7 @@ fof-oauth:
                     client_id_label: 'Khóa tiêu dùng (Client Key)'
                     client_secret_label: 'Khóa bí mật (Client Secret)'
                     user_agent_label: 'Tác nhân người dùng (User Agent)'
+                    icon_label: 'Biểu tượng nhà cung cấp (FontAwesome)'
 
     forum:
         log_in:
