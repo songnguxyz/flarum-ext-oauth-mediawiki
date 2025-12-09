@@ -131,14 +131,6 @@ class MediaWikiProvider extends AbstractProvider
     
     /**
      * Fetch block information for the authenticated user from MediaWiki API.
-     * This method checks for local blocks, and if CentralAuth extension is
-     * installed, also checks for global account locks.
-     * 
-     * Note: GlobalBlocking extension blocks are automatically included in the
-     * meta=userinfo response, so no separate check is needed.
-     * 
-     * Performance note: Extension detection is performed on each authentication.
-     * For high-traffic sites, consider caching extension detection results.
      *
      * @param AccessToken $token
      * @return array|null
@@ -146,140 +138,30 @@ class MediaWikiProvider extends AbstractProvider
     protected function fetchBlockInfo(AccessToken $token)
     {
         try {
-            $apiUrl = $this->buildApiUrl();
-            if ($apiUrl === null) {
+            // Construct the MediaWiki API URL for userinfo query
+            // Parse the base URL to properly construct the API endpoint
+            $parsedUrl = parse_url($this->baseUrl);
+            
+            if ($parsedUrl === false) {
                 return null;
             }
             
-            // First, detect installed extensions (CentralAuth)
-            $extensions = $this->fetchInstalledExtensions($apiUrl, $token);
+            // Build the base path
+            $path = $parsedUrl['path'] ?? '';
             
-            $hasCentralAuth = in_array('CentralAuth', $extensions, true);
-            
-            // Initialize block status
-            $blocked = false;
-            $blockexpiry = null;
-            $blockreason = null;
-            
-            // Check local blocks (always performed)
-            // Note: This also automatically includes GlobalBlocking IP blocks when they apply
-            $localBlockInfo = $this->checkLocalBlock($apiUrl, $token);
-            if ($localBlockInfo !== null && $localBlockInfo['blocked']) {
-                $blocked = true;
-                $blockexpiry = $localBlockInfo['blockexpiry'];
-                $blockreason = $localBlockInfo['blockreason'];
+            // Replace /rest.php with /api.php if present, otherwise append /api.php
+            if (strpos($path, '/rest.php') !== false) {
+                $path = str_replace('/rest.php', '/api.php', $path);
+            } else {
+                $path = rtrim($path, '/') . '/api.php';
             }
             
-            // Check CentralAuth global locks/blocks if available
-            if ($hasCentralAuth) {
-                $centralAuthBlockInfo = $this->checkCentralAuthBlock($apiUrl, $token);
-                if ($centralAuthBlockInfo !== null && $centralAuthBlockInfo['blocked']) {
-                    // Global locks take precedence
-                    $blocked = true;
-                    $blockexpiry = $centralAuthBlockInfo['blockexpiry'] ?? $blockexpiry;
-                    $blockreason = $centralAuthBlockInfo['blockreason'] ?? $blockreason;
-                }
-            }
+            // Reconstruct the URL
+            $apiUrl = ($parsedUrl['scheme'] ?? 'https') . '://' 
+                    . ($parsedUrl['host'] ?? '') 
+                    . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '')
+                    . $path;
             
-            return [
-                'blocked' => $blocked,
-                'blockexpiry' => $blockexpiry,
-                'blockreason' => $blockreason,
-            ];
-        } catch (IdentityProviderException $e) {
-            // Authentication or API errors
-            // Silently fail to allow authentication to continue
-            // Security note: Failed block checks may allow blocked users to authenticate
-            // In production, consider logging: error_log('MediaWiki block check failed: ' . $e->getMessage());
-        } catch (\RuntimeException $e) {
-            // Runtime errors from API calls
-            // Silently fail to allow authentication to continue
-            // Security note: Failed block checks may allow blocked users to authenticate
-            // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Build the MediaWiki API URL from the base URL.
-     *
-     * @return string|null
-     */
-    protected function buildApiUrl()
-    {
-        $parsedUrl = parse_url($this->baseUrl);
-        
-        if ($parsedUrl === false) {
-            return null;
-        }
-        
-        // Build the base path
-        $path = $parsedUrl['path'] ?? '';
-        
-        // Replace /rest.php with /api.php if present, otherwise append /api.php
-        if (strpos($path, '/rest.php') !== false) {
-            $path = str_replace('/rest.php', '/api.php', $path);
-        } else {
-            $path = rtrim($path, '/') . '/api.php';
-        }
-        
-        // Reconstruct the URL
-        return ($parsedUrl['scheme'] ?? 'https') . '://' 
-             . ($parsedUrl['host'] ?? '') 
-             . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '')
-             . $path;
-    }
-    
-    /**
-     * Fetch the list of installed extensions from MediaWiki.
-     *
-     * @param string $apiUrl
-     * @param AccessToken $token
-     * @return array List of extension names
-     */
-    protected function fetchInstalledExtensions($apiUrl, AccessToken $token)
-    {
-        try {
-            $url = $apiUrl . '?' . http_build_query([
-                'action' => 'query',
-                'meta' => 'siteinfo',
-                'siprop' => 'extensions',
-                'format' => 'json',
-            ]);
-            
-            $request = $this->getAuthenticatedRequest('GET', $url, $token);
-            $response = $this->getParsedResponse($request);
-            
-            if (isset($response['query']['extensions']) && is_array($response['query']['extensions'])) {
-                $extensions = [];
-                foreach ($response['query']['extensions'] as $ext) {
-                    $name = $ext['name'] ?? '';
-                    if ($name !== '') {
-                        $extensions[] = $name;
-                    }
-                }
-                return $extensions;
-            }
-        } catch (IdentityProviderException $e) {
-            // If we can't fetch extensions, continue without them
-        } catch (\RuntimeException $e) {
-            // If we can't fetch extensions, continue without them
-        }
-        
-        return [];
-    }
-    
-    /**
-     * Check for local blocks using meta=userinfo.
-     *
-     * @param string $apiUrl
-     * @param AccessToken $token
-     * @return array|null
-     */
-    protected function checkLocalBlock($apiUrl, AccessToken $token)
-    {
-        try {
             $url = $apiUrl . '?' . http_build_query([
                 'action' => 'query',
                 'meta' => 'userinfo',
@@ -290,6 +172,7 @@ class MediaWikiProvider extends AbstractProvider
             $request = $this->getAuthenticatedRequest('GET', $url, $token);
             $response = $this->getParsedResponse($request);
             
+            // Extract block information from the response
             if (isset($response['query']['userinfo'])) {
                 $userinfo = $response['query']['userinfo'];
                 
@@ -300,51 +183,15 @@ class MediaWikiProvider extends AbstractProvider
                 ];
             }
         } catch (IdentityProviderException $e) {
-            // Silently fail
-        } catch (\RuntimeException $e) {
-            // Silently fail
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Check for CentralAuth global locks/blocks using meta=globaluserinfo.
-     *
-     * @param string $apiUrl
-     * @param AccessToken $token
-     * @return array|null
-     */
-    protected function checkCentralAuthBlock($apiUrl, AccessToken $token)
-    {
-        try {
-            $url = $apiUrl . '?' . http_build_query([
-                'action' => 'query',
-                'meta' => 'globaluserinfo',
-                'guiprop' => 'locked',
-                'format' => 'json',
-            ]);
-            
-            $request = $this->getAuthenticatedRequest('GET', $url, $token);
-            $response = $this->getParsedResponse($request);
-            
-            if (isset($response['query']['globaluserinfo'])) {
-                $globaluserinfo = $response['query']['globaluserinfo'];
-                
-                // Check if the account is locked
-                // The 'locked' field is only present when the account is locked
-                if (isset($globaluserinfo['locked'])) {
-                    return [
-                        'blocked' => true,
-                        'blockexpiry' => null, // CentralAuth locks are typically indefinite
-                        'blockreason' => 'Account globally locked via CentralAuth',
-                    ];
-                }
-            }
-        } catch (IdentityProviderException $e) {
-            // Silently fail
-        } catch (\RuntimeException $e) {
-            // Silently fail
+            // Authentication or API errors
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check failed: ' . $e->getMessage());
+        } catch (\Exception $e) {
+            // Other errors
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
         }
         
         return null;
