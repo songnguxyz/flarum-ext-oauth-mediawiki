@@ -19,6 +19,8 @@ fof-oauth:
         error:
             wiki_user_blocked: Your MediaWiki account has been blocked and you 
                 cannot log in to this forum.
+            invalid_email: Unable to retrieve an email address from your MediaWiki
+                account. Please use another login method.
 
         providers:
             mediawiki: '=> fof-oauth.lib.providers.mediawiki'
