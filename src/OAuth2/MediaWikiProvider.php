@@ -136,6 +136,9 @@ class MediaWikiProvider extends AbstractProvider
      * 
      * Note: GlobalBlocking extension blocks are automatically included in the
      * meta=userinfo response, so no separate check is needed.
+     * 
+     * Performance note: Extension detection is performed on each authentication.
+     * For high-traffic sites, consider caching extension detection results.
      *
      * @param AccessToken $token
      * @return array|null
@@ -188,11 +191,6 @@ class MediaWikiProvider extends AbstractProvider
             // Silently fail to allow authentication to continue
             // Security note: Failed block checks may allow blocked users to authenticate
             // In production, consider logging: error_log('MediaWiki block check failed: ' . $e->getMessage());
-        } catch (\Exception $e) {
-            // Other errors
-            // Silently fail to allow authentication to continue
-            // Security note: Failed block checks may allow blocked users to authenticate
-            // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
         }
         
         return null;
@@ -324,9 +322,8 @@ class MediaWikiProvider extends AbstractProvider
                 $globaluserinfo = $response['query']['globaluserinfo'];
                 
                 // Check if the account is locked
-                $locked = isset($globaluserinfo['locked']) && $globaluserinfo['locked'];
-                
-                if ($locked) {
+                // The 'locked' field is only present when the account is locked
+                if (isset($globaluserinfo['locked'])) {
                     return [
                         'blocked' => true,
                         'blockexpiry' => null, // CentralAuth locks are typically indefinite
