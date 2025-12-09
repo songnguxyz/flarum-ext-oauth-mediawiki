@@ -21,6 +21,11 @@ class MediaWikiProvider extends AbstractProvider
 {
     use BearerAuthorizationTrait;
 
+    // Matches /rest.php or /rest.php/<path> endpoints
+    private const REST_PATTERN = '~/rest\\.php(?:/.*)?$~i';
+    // Matches /api.php endpoints
+    private const API_PATTERN = '~/api\\.php$~i';
+
     /**
      * @var string
      */
@@ -40,7 +45,7 @@ class MediaWikiProvider extends AbstractProvider
         parent::__construct($options, $collaborators);
 
         if (isset($options['baseUrl'])) {
-            $this->baseUrl = rtrim($options['baseUrl'], '/');
+            $this->baseUrl = $this->normalizeBaseUrl($options['baseUrl']);
         }
 
         if (!empty($options['userAgent'])) {
@@ -127,6 +132,23 @@ class MediaWikiProvider extends AbstractProvider
         }
         
         return new MediaWikiResourceOwner($response);
+    }
+
+    protected function normalizeBaseUrl(string $baseUrl): string
+    {
+        $baseUrl = rtrim(trim($baseUrl), '/');
+
+        if ($baseUrl === '') {
+            return $baseUrl;
+        }
+
+        foreach ([self::REST_PATTERN, self::API_PATTERN] as $pattern) {
+            if (preg_match($pattern, $baseUrl)) {
+                return preg_replace($pattern, '/rest.php', $baseUrl);
+            }
+        }
+
+        return $baseUrl . '/rest.php';
     }
     
     /**

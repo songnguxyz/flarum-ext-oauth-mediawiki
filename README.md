@@ -35,9 +35,10 @@ php flarum cache:clear
    - Note down the **Client Key** and **Client Secret** provided
 
 3) In your Flarum admin panel, enable this extension and configure:
-   - **MediaWiki Base URL**: Your MediaWiki REST API base URL (e.g., `https://yourwiki.example.com/w/rest.php`). This is the URL where the OAuth2 endpoints are available.
+   - **MediaWiki URL or REST API URL**: Enter your wiki URL (e.g., `https://yourwiki.example.com` or `https://yourwiki.example.com/w`). The extension will auto-detect the REST path; you can still paste the full REST API URL (e.g., `https://yourwiki.example.com/w/rest.php`) if you prefer. This is the URL where the OAuth2 endpoints are available.
    - **Client Key**: The client Key from step 2
    - **Client Secret**: The client secret from step 2
+   - **Provider Icon** (optional): Any FontAwesome class already bundled with Flarum (e.g., `fab fa-wikipedia-w`).
 
 4) Log in with MediaWiki!
 
