@@ -131,6 +131,8 @@ class MediaWikiProvider extends AbstractProvider
     
     /**
      * Fetch block information for the authenticated user from MediaWiki API.
+     * This method checks for local blocks, and if CentralAuth or GlobalBlocking
+     * extensions are installed, also checks for global blocks/locks.
      *
      * @param AccessToken $token
      * @return array|null
@@ -138,50 +140,57 @@ class MediaWikiProvider extends AbstractProvider
     protected function fetchBlockInfo(AccessToken $token)
     {
         try {
-            // Construct the MediaWiki API URL for userinfo query
-            // Parse the base URL to properly construct the API endpoint
-            $parsedUrl = parse_url($this->baseUrl);
-            
-            if ($parsedUrl === false) {
+            $apiUrl = $this->buildApiUrl();
+            if ($apiUrl === null) {
                 return null;
             }
             
-            // Build the base path
-            $path = $parsedUrl['path'] ?? '';
+            // First, detect installed extensions (CentralAuth, GlobalBlocking)
+            $extensions = $this->fetchInstalledExtensions($apiUrl, $token);
             
-            // Replace /rest.php with /api.php if present, otherwise append /api.php
-            if (strpos($path, '/rest.php') !== false) {
-                $path = str_replace('/rest.php', '/api.php', $path);
-            } else {
-                $path = rtrim($path, '/') . '/api.php';
+            $hasCentralAuth = in_array('CentralAuth', $extensions);
+            $hasGlobalBlocking = in_array('GlobalBlocking', $extensions);
+            
+            // Initialize block status
+            $blocked = false;
+            $blockexpiry = null;
+            $blockreason = null;
+            
+            // Check local blocks (always performed)
+            $localBlockInfo = $this->checkLocalBlock($apiUrl, $token);
+            if ($localBlockInfo !== null && $localBlockInfo['blocked']) {
+                $blocked = true;
+                $blockexpiry = $localBlockInfo['blockexpiry'];
+                $blockreason = $localBlockInfo['blockreason'];
             }
             
-            // Reconstruct the URL
-            $apiUrl = ($parsedUrl['scheme'] ?? 'https') . '://' 
-                    . ($parsedUrl['host'] ?? '') 
-                    . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '')
-                    . $path;
-            
-            $url = $apiUrl . '?' . http_build_query([
-                'action' => 'query',
-                'meta' => 'userinfo',
-                'uiprop' => 'blockinfo',
-                'format' => 'json',
-            ]);
-            
-            $request = $this->getAuthenticatedRequest('GET', $url, $token);
-            $response = $this->getParsedResponse($request);
-            
-            // Extract block information from the response
-            if (isset($response['query']['userinfo'])) {
-                $userinfo = $response['query']['userinfo'];
-                
-                return [
-                    'blocked' => isset($userinfo['blockid']),
-                    'blockexpiry' => $userinfo['blockexpiry'] ?? null,
-                    'blockreason' => $userinfo['blockreason'] ?? null,
-                ];
+            // Check CentralAuth global locks/blocks if available
+            if ($hasCentralAuth) {
+                $centralAuthBlockInfo = $this->checkCentralAuthBlock($apiUrl, $token);
+                if ($centralAuthBlockInfo !== null && $centralAuthBlockInfo['blocked']) {
+                    // Global blocks take precedence
+                    $blocked = true;
+                    $blockexpiry = $centralAuthBlockInfo['blockexpiry'] ?? $blockexpiry;
+                    $blockreason = $centralAuthBlockInfo['blockreason'] ?? $blockreason;
+                }
             }
+            
+            // Check GlobalBlocking blocks if available
+            if ($hasGlobalBlocking) {
+                $globalBlockingInfo = $this->checkGlobalBlocking($apiUrl, $token);
+                if ($globalBlockingInfo !== null && $globalBlockingInfo['blocked']) {
+                    // Global blocks take precedence
+                    $blocked = true;
+                    $blockexpiry = $globalBlockingInfo['blockexpiry'] ?? $blockexpiry;
+                    $blockreason = $globalBlockingInfo['blockreason'] ?? $blockreason;
+                }
+            }
+            
+            return [
+                'blocked' => $blocked,
+                'blockexpiry' => $blockexpiry,
+                'blockreason' => $blockreason,
+            ];
         } catch (IdentityProviderException $e) {
             // Authentication or API errors
             // Silently fail to allow authentication to continue
@@ -192,6 +201,200 @@ class MediaWikiProvider extends AbstractProvider
             // Silently fail to allow authentication to continue
             // Security note: Failed block checks may allow blocked users to authenticate
             // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Build the MediaWiki API URL from the base URL.
+     *
+     * @return string|null
+     */
+    protected function buildApiUrl()
+    {
+        $parsedUrl = parse_url($this->baseUrl);
+        
+        if ($parsedUrl === false) {
+            return null;
+        }
+        
+        // Build the base path
+        $path = $parsedUrl['path'] ?? '';
+        
+        // Replace /rest.php with /api.php if present, otherwise append /api.php
+        if (strpos($path, '/rest.php') !== false) {
+            $path = str_replace('/rest.php', '/api.php', $path);
+        } else {
+            $path = rtrim($path, '/') . '/api.php';
+        }
+        
+        // Reconstruct the URL
+        return ($parsedUrl['scheme'] ?? 'https') . '://' 
+             . ($parsedUrl['host'] ?? '') 
+             . ($parsedUrl['port'] ? ':' . $parsedUrl['port'] : '')
+             . $path;
+    }
+    
+    /**
+     * Fetch the list of installed extensions from MediaWiki.
+     *
+     * @param string $apiUrl
+     * @param AccessToken $token
+     * @return array List of extension names
+     */
+    protected function fetchInstalledExtensions($apiUrl, AccessToken $token)
+    {
+        try {
+            $url = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'meta' => 'siteinfo',
+                'siprop' => 'extensions',
+                'format' => 'json',
+            ]);
+            
+            $request = $this->getAuthenticatedRequest('GET', $url, $token);
+            $response = $this->getParsedResponse($request);
+            
+            if (isset($response['query']['extensions']) && is_array($response['query']['extensions'])) {
+                return array_map(function($ext) {
+                    return $ext['name'] ?? '';
+                }, $response['query']['extensions']);
+            }
+        } catch (\Exception $e) {
+            // If we can't fetch extensions, continue without them
+        }
+        
+        return [];
+    }
+    
+    /**
+     * Check for local blocks using meta=userinfo.
+     *
+     * @param string $apiUrl
+     * @param AccessToken $token
+     * @return array|null
+     */
+    protected function checkLocalBlock($apiUrl, AccessToken $token)
+    {
+        try {
+            $url = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'meta' => 'userinfo',
+                'uiprop' => 'blockinfo',
+                'format' => 'json',
+            ]);
+            
+            $request = $this->getAuthenticatedRequest('GET', $url, $token);
+            $response = $this->getParsedResponse($request);
+            
+            if (isset($response['query']['userinfo'])) {
+                $userinfo = $response['query']['userinfo'];
+                
+                return [
+                    'blocked' => isset($userinfo['blockid']),
+                    'blockexpiry' => $userinfo['blockexpiry'] ?? null,
+                    'blockreason' => $userinfo['blockreason'] ?? null,
+                ];
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Check for CentralAuth global locks/blocks using meta=globaluserinfo.
+     *
+     * @param string $apiUrl
+     * @param AccessToken $token
+     * @return array|null
+     */
+    protected function checkCentralAuthBlock($apiUrl, AccessToken $token)
+    {
+        try {
+            $url = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'meta' => 'globaluserinfo',
+                'guiprop' => 'editcount|merged|unattached',
+                'format' => 'json',
+            ]);
+            
+            $request = $this->getAuthenticatedRequest('GET', $url, $token);
+            $response = $this->getParsedResponse($request);
+            
+            if (isset($response['query']['globaluserinfo'])) {
+                $globaluserinfo = $response['query']['globaluserinfo'];
+                
+                // Check if the account is locked
+                $locked = isset($globaluserinfo['locked']) && $globaluserinfo['locked'];
+                
+                if ($locked) {
+                    return [
+                        'blocked' => true,
+                        'blockexpiry' => null, // CentralAuth locks are typically indefinite
+                        'blockreason' => 'Account globally locked via CentralAuth',
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Check for GlobalBlocking blocks using list=globalblocks.
+     *
+     * @param string $apiUrl
+     * @param AccessToken $token
+     * @return array|null
+     */
+    protected function checkGlobalBlocking($apiUrl, AccessToken $token)
+    {
+        try {
+            // First, get the current user's name to check for account-specific global blocks
+            $userinfoUrl = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'meta' => 'userinfo',
+                'format' => 'json',
+            ]);
+            
+            $userinfoRequest = $this->getAuthenticatedRequest('GET', $userinfoUrl, $token);
+            $userinfoResponse = $this->getParsedResponse($userinfoRequest);
+            
+            if (!isset($userinfoResponse['query']['userinfo']['name'])) {
+                return null;
+            }
+            
+            $username = $userinfoResponse['query']['userinfo']['name'];
+            
+            // Check for global blocks targeting this specific user
+            $url = $apiUrl . '?' . http_build_query([
+                'action' => 'query',
+                'list' => 'globalblocks',
+                'bgip' => $username, // Can be used for both IPs and usernames
+                'bgprop' => 'id|address|by|timestamp|expiry|reason',
+                'format' => 'json',
+            ]);
+            
+            $request = $this->getAuthenticatedRequest('GET', $url, $token);
+            $response = $this->getParsedResponse($request);
+            
+            // Check if there are any global blocks for this user
+            if (isset($response['query']['globalblocks']) && !empty($response['query']['globalblocks'])) {
+                $block = $response['query']['globalblocks'][0]; // Get the first (most relevant) block
+                
+                return [
+                    'blocked' => true,
+                    'blockexpiry' => $block['expiry'] ?? null,
+                    'blockreason' => $block['reason'] ?? 'Globally blocked',
+                ];
+            }
+        } catch (\Exception $e) {
+            // Silently fail
         }
         
         return null;
