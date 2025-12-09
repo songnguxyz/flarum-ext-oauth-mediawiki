@@ -20,8 +20,6 @@ use Songnguxyz\OAuthMediaWiki\OAuth2\MediaWikiResourceOwner;
 
 class MediaWiki extends Provider
 {
-    private const ICON_TOKEN_PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/i';
-
     /**
      * @var MediaWikiProvider
      */
@@ -39,16 +37,6 @@ class MediaWiki extends Provider
 
     public function icon(): string
     {
-        $customIcon = $this->getSetting('icon');
-
-        if (is_string($customIcon)) {
-            $customIcon = $this->sanitizeIcon($customIcon);
-
-            if ($customIcon !== '') {
-                return $customIcon;
-            }
-        }
-
         return 'fab fa-wikipedia-w';
     }
 
@@ -59,7 +47,6 @@ class MediaWiki extends Provider
             'client_id'     => 'required',
             'client_secret' => 'required',
             'user_agent'    => '',
-            'icon'          => '',
         ];
     }
 
@@ -117,29 +104,5 @@ class MediaWiki extends Provider
             ->suggestUsername($user->getUsername())
             ->provideTrustedEmail($email)
             ->setPayload($user->toArray());
-    }
-
-    protected function sanitizeIcon(string $icon): string
-    {
-        $tokens = preg_split('/\s+/', trim($icon));
-
-        if ($tokens === false) {
-            return '';
-        }
-
-        $tokens = array_values(
-            array_filter(
-                array_map(
-                    static function ($token) {
-                        $token = (string) preg_replace('/[^a-z0-9-]/i', '', $token);
-
-                        return $token === '' ? null : $token;
-                    },
-                    $tokens
-                )
-            )
-        );
-
-        return implode(' ', $tokens);
     }
 }
