@@ -4,12 +4,14 @@ fof-oauth:
             providers:
                 mediawiki:
                     description: Configure your MediaWiki OAuth2 application. 
-                        See the documentation at {link}
+                        REST API paths are auto-detected; you can still provide the
+                        full REST URL if preferred. See the documentation at {link}
 
-                    base_url_label: MediaWiki Base URL
+                    base_url_label: MediaWiki URL or REST API URL
                     client_id_label: Client Key
                     client_secret_label: => fof-oauth.ref.settings.client_secret
                     user_agent_label: User Agent
+                    icon_label: Provider Icon (FontAwesome class)
 
     forum:
         log_in:

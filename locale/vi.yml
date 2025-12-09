@@ -4,12 +4,14 @@ fof-oauth:
             providers:
                 mediawiki:
                     description: 'Thiết lập đăng nhập MediaWiki thông qua OAuth2 tại
-                        đây. Xem tài liệu tại {link}'
+                        đây. Đường dẫn REST sẽ được tự động nhận diện; bạn vẫn có thể
+                        nhập đầy đủ URL REST nếu muốn. Xem tài liệu tại {link}'
 
-                    base_url_label: 'Liên kết Rest API MediaWiki'
+                    base_url_label: 'Liên kết MediaWiki hoặc Rest API'
                     client_id_label: 'Khóa tiêu dùng (Client Key)'
                     client_secret_label: 'Khóa bí mật (Client Secret)'
                     user_agent_label: 'Tác nhân người dùng (User Agent)'
+                    icon_label: 'Biểu tượng nhà cung cấp (FontAwesome)'
 
     forum:
         log_in:
