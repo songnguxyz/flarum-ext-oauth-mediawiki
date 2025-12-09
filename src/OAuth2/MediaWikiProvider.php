@@ -154,7 +154,7 @@ class MediaWikiProvider extends AbstractProvider
             // First, detect installed extensions (CentralAuth)
             $extensions = $this->fetchInstalledExtensions($apiUrl, $token);
             
-            $hasCentralAuth = in_array('CentralAuth', $extensions);
+            $hasCentralAuth = in_array('CentralAuth', $extensions, true);
             
             // Initialize block status
             $blocked = false;
@@ -191,6 +191,11 @@ class MediaWikiProvider extends AbstractProvider
             // Silently fail to allow authentication to continue
             // Security note: Failed block checks may allow blocked users to authenticate
             // In production, consider logging: error_log('MediaWiki block check failed: ' . $e->getMessage());
+        } catch (\RuntimeException $e) {
+            // Runtime errors from API calls
+            // Silently fail to allow authentication to continue
+            // Security note: Failed block checks may allow blocked users to authenticate
+            // In production, consider logging: error_log('MediaWiki block check error: ' . $e->getMessage());
         }
         
         return null;
@@ -247,9 +252,14 @@ class MediaWikiProvider extends AbstractProvider
             $response = $this->getParsedResponse($request);
             
             if (isset($response['query']['extensions']) && is_array($response['query']['extensions'])) {
-                return array_map(function($ext) {
-                    return $ext['name'] ?? '';
-                }, $response['query']['extensions']);
+                $extensions = [];
+                foreach ($response['query']['extensions'] as $ext) {
+                    $name = $ext['name'] ?? '';
+                    if ($name !== '') {
+                        $extensions[] = $name;
+                    }
+                }
+                return $extensions;
             }
         } catch (IdentityProviderException $e) {
             // If we can't fetch extensions, continue without them
