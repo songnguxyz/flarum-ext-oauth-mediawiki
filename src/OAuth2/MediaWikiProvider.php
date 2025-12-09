@@ -15,7 +15,6 @@ use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
-use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Message\ResponseInterface;
 
 class MediaWikiProvider extends AbstractProvider
@@ -26,11 +25,6 @@ class MediaWikiProvider extends AbstractProvider
     private const REST_PATTERN = '~/rest\\.php(?:/.*)?$~i';
     // Matches /api.php endpoints
     private const API_PATTERN = '~/api\\.php$~i';
-    private const DISCOVERY_TIMEOUT = 5;
-    private const DISCOVERY_MAX_BODY_LENGTH = 100000;
-    private const DISCOVERY_CHUNK_SIZE = 8192;
-    private const SCRIPT_PATH_MAX_LENGTH = 256;
-    private const ERROR_STATUS_THRESHOLD = 400;
 
     /**
      * @var string
@@ -50,13 +44,12 @@ class MediaWikiProvider extends AbstractProvider
     {
         parent::__construct($options, $collaborators);
 
-        if (!empty($options['userAgent'])) {
-            $this->userAgent = $options['userAgent'];
+        if (isset($options['baseUrl'])) {
+            $this->baseUrl = $this->normalizeBaseUrl($options['baseUrl']);
         }
 
-        if (isset($options['baseUrl'])) {
-            $discoveredBaseUrl = $this->discoverScriptPathBaseUrl($options['baseUrl']);
-            $this->baseUrl = $this->normalizeBaseUrl($discoveredBaseUrl ?? $options['baseUrl']);
+        if (!empty($options['userAgent'])) {
+            $this->userAgent = $options['userAgent'];
         }
     }
 
@@ -139,93 +132,6 @@ class MediaWikiProvider extends AbstractProvider
         }
         
         return new MediaWikiResourceOwner($response);
-    }
-
-    /**
-     * Attempt to discover the wiki's script path from the provided URL.
-     *
-     * Performs a bounded fetch of the supplied URL, scans the response for the MediaWiki
-     * `wgScriptPath` configuration value, and returns null on network errors, malformed URLs,
-     * missing matches, or when the URL already targets a script endpoint.
-     *
-     * @param string $baseUrl
-     * @return string|null
-     */
-    protected function discoverScriptPathBaseUrl(string $baseUrl): ?string
-    {
-        $baseUrl = trim($baseUrl);
-
-        if ($baseUrl === '' || preg_match(self::REST_PATTERN, $baseUrl) || preg_match(self::API_PATTERN, $baseUrl)) {
-            return null;
-        }
-
-        $requestUrl = $baseUrl;
-
-        if (!preg_match('~^https?://~i', $requestUrl)) {
-            $requestUrl = 'https://' . ltrim($requestUrl, '/');
-        }
-
-        try {
-            $requestOptions = [
-                'http_errors' => false,
-                'timeout' => self::DISCOVERY_TIMEOUT,
-            ];
-
-            if ($this->userAgent !== null) {
-                $requestOptions['headers']['User-Agent'] = $this->userAgent;
-            }
-
-            $response = $this->getHttpClient()->request('GET', $requestUrl, $requestOptions);
-
-            if ($response->getStatusCode() >= self::ERROR_STATUS_THRESHOLD) {
-                return null;
-            }
-
-            $bodyStream = $response->getBody();
-            $body = '';
-            $bodyLength = 0;
-
-            $pattern = sprintf('~"wgScriptPath"\\s*:\\s*"((?:[^"\\\\]|\\\\.){1,%d})"~i', (int) self::SCRIPT_PATH_MAX_LENGTH);
-
-            while (!$bodyStream->eof() && $bodyLength < self::DISCOVERY_MAX_BODY_LENGTH) {
-                $chunk = $bodyStream->read(min(self::DISCOVERY_MAX_BODY_LENGTH - $bodyLength, self::DISCOVERY_CHUNK_SIZE));
-                if ($chunk === '') {
-                    break;
-                }
-
-                $body .= $chunk;
-                $bodyLength += strlen($chunk);
-
-                if (preg_match($pattern, $body, $matches)) {
-                    $scriptPath = json_decode('"' . $matches[1] . '"');
-
-                    if (!is_string($scriptPath)) {
-                        return null;
-                    }
-
-                    $parsedUrl = parse_url($requestUrl);
-
-                    if ($parsedUrl === false || !isset($parsedUrl['host']) || trim($parsedUrl['host']) === '') {
-                        return null;
-                    }
-
-                    $scheme = $parsedUrl['scheme'] ?? 'https';
-                    if (trim($scheme) === '') {
-                        $scheme = 'https';
-                    }
-                    $port = isset($parsedUrl['port']) ? ':' . $parsedUrl['port'] : '';
-
-                    $normalizedScriptPath = trim($scriptPath, '/');
-                    $scriptSuffix = $normalizedScriptPath === '' ? '' : '/' . $normalizedScriptPath;
-
-                    return rtrim($scheme . '://' . $parsedUrl['host'] . $port . $scriptSuffix, '/');
-                }
-            }
-        } catch (GuzzleException $e) {
-            return null;
-        }
-
-        return null;
     }
 
     protected function normalizeBaseUrl(string $baseUrl): string
