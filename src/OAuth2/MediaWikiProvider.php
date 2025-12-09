@@ -131,8 +131,11 @@ class MediaWikiProvider extends AbstractProvider
     
     /**
      * Fetch block information for the authenticated user from MediaWiki API.
-     * This method checks for local blocks, and if CentralAuth or GlobalBlocking
-     * extensions are installed, also checks for global blocks/locks.
+     * This method checks for local blocks, and if CentralAuth extension is
+     * installed, also checks for global account locks.
+     * 
+     * Note: GlobalBlocking extension blocks are automatically included in the
+     * meta=userinfo response, so no separate check is needed.
      *
      * @param AccessToken $token
      * @return array|null
@@ -145,11 +148,10 @@ class MediaWikiProvider extends AbstractProvider
                 return null;
             }
             
-            // First, detect installed extensions (CentralAuth, GlobalBlocking)
+            // First, detect installed extensions (CentralAuth)
             $extensions = $this->fetchInstalledExtensions($apiUrl, $token);
             
             $hasCentralAuth = in_array('CentralAuth', $extensions);
-            $hasGlobalBlocking = in_array('GlobalBlocking', $extensions);
             
             // Initialize block status
             $blocked = false;
@@ -157,7 +159,7 @@ class MediaWikiProvider extends AbstractProvider
             $blockreason = null;
             
             // Check local blocks (always performed)
-            // This also picks up GlobalBlocking IP blocks when they apply
+            // Note: This also automatically includes GlobalBlocking IP blocks when they apply
             $localBlockInfo = $this->checkLocalBlock($apiUrl, $token);
             if ($localBlockInfo !== null && $localBlockInfo['blocked']) {
                 $blocked = true;
@@ -169,22 +171,10 @@ class MediaWikiProvider extends AbstractProvider
             if ($hasCentralAuth) {
                 $centralAuthBlockInfo = $this->checkCentralAuthBlock($apiUrl, $token);
                 if ($centralAuthBlockInfo !== null && $centralAuthBlockInfo['blocked']) {
-                    // Global blocks take precedence
+                    // Global locks take precedence
                     $blocked = true;
                     $blockexpiry = $centralAuthBlockInfo['blockexpiry'] ?? $blockexpiry;
                     $blockreason = $centralAuthBlockInfo['blockreason'] ?? $blockreason;
-                }
-            }
-            
-            // Check GlobalBlocking blocks if available
-            // Pass local block info to avoid duplicate API calls
-            if ($hasGlobalBlocking && $localBlockInfo !== null) {
-                $globalBlockingInfo = $this->checkGlobalBlocking($localBlockInfo);
-                if ($globalBlockingInfo !== null && $globalBlockingInfo['blocked']) {
-                    // If identified as global block, use its metadata
-                    $blocked = true;
-                    $blockexpiry = $globalBlockingInfo['blockexpiry'] ?? $blockexpiry;
-                    $blockreason = $globalBlockingInfo['blockreason'] ?? $blockreason;
                 }
             }
             
@@ -263,7 +253,9 @@ class MediaWikiProvider extends AbstractProvider
                     return $ext['name'] ?? '';
                 }, $response['query']['extensions']);
             }
-        } catch (\Exception $e) {
+        } catch (IdentityProviderException $e) {
+            // If we can't fetch extensions, continue without them
+        } catch (\RuntimeException $e) {
             // If we can't fetch extensions, continue without them
         }
         
@@ -299,7 +291,9 @@ class MediaWikiProvider extends AbstractProvider
                     'blockreason' => $userinfo['blockreason'] ?? null,
                 ];
             }
-        } catch (\Exception $e) {
+        } catch (IdentityProviderException $e) {
+            // Silently fail
+        } catch (\RuntimeException $e) {
             // Silently fail
         }
         
@@ -319,7 +313,7 @@ class MediaWikiProvider extends AbstractProvider
             $url = $apiUrl . '?' . http_build_query([
                 'action' => 'query',
                 'meta' => 'globaluserinfo',
-                'guiprop' => 'editcount|merged|unattached|groups|locked',
+                'guiprop' => 'locked',
                 'format' => 'json',
             ]);
             
@@ -340,51 +334,9 @@ class MediaWikiProvider extends AbstractProvider
                     ];
                 }
             }
-        } catch (\Exception $e) {
+        } catch (IdentityProviderException $e) {
             // Silently fail
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Check if a local block is actually a GlobalBlocking block.
-     * 
-     * The GlobalBlocking extension applies IP-based global blocks which are
-     * automatically reflected in meta=userinfo blockinfo. This method examines
-     * the local block data to determine if it's actually a global block.
-     * 
-     * @param array $localBlockInfo Block info from checkLocalBlock
-     * @return array|null
-     */
-    protected function checkGlobalBlocking(array $localBlockInfo)
-    {
-        try {
-            // If user is not blocked, no global block applies
-            if (!$localBlockInfo['blocked']) {
-                return null;
-            }
-            
-            // Check if this appears to be a global block by examining metadata
-            // GlobalBlocking blocks typically have:
-            // - "autoblocking" disabled (global blocks don't autoblock)
-            // - Specific block flags or identifiers
-            // - Block reasons that may contain patterns (though language-dependent)
-            
-            // Since we can't reliably detect global blocks without additional API data,
-            // and global blocks are already included in the userinfo response,
-            // we'll return the block info as-is with a note that it might be global
-            
-            // In a real implementation with full MediaWiki API access, you would:
-            // 1. Check the 'systemblocktype' field if available
-            // 2. Query list=globalblocks with the user's IP to confirm
-            // 3. Check for specific block flags that indicate global blocks
-            
-            // For now, we acknowledge that global blocks are captured by checkLocalBlock
-            // and return null to indicate no additional processing is needed
-            return null;
-            
-        } catch (\Exception $e) {
+        } catch (\RuntimeException $e) {
             // Silently fail
         }
         
