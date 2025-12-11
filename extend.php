@@ -11,8 +11,11 @@
 
 namespace Songnguxyz\OAuthMediaWiki;
 
+use Flarum\Api\Serializer\UserSerializer;
 use Flarum\Extend;
 use FoF\OAuth\Extend as OAuthExtend;
+use FoF\Extend\Events\OAuthLoginSuccessful;
+use Songnguxyz\OAuthMediaWiki\Listeners\SyncMediaWikiAccount;
 use Songnguxyz\OAuthMediaWiki\Providers\MediaWiki;
 
 return [
@@ -24,6 +27,20 @@ return [
         ->css(__DIR__.'/less/admin.less'),
 
     new Extend\Locales(__DIR__.'/locale'),
+
+    (new Extend\Settings())
+        ->serializeToForum('songnguxyz-oauth-mediawiki.show_wiki_status', 'songnguxyz-oauth-mediawiki.show_wiki_status', 'boolval'),
+
+    (new Extend\ApiSerializer(UserSerializer::class))
+        ->attributes(function (UserSerializer $serializer, $user, array $attributes) {
+            $attributes['mediawikiUsername'] = $user->getPreference('songnguxyz-oauth-mediawiki.username');
+            $attributes['mediawikiEditCount'] = $user->getPreference('songnguxyz-oauth-mediawiki.editcount');
+
+            return $attributes;
+        }),
+
+    (new Extend\Event())
+        ->listen(OAuthLoginSuccessful::class, SyncMediaWikiAccount::class),
 
     (new OAuthExtend\RegisterProvider(MediaWiki::class)),
 ];
