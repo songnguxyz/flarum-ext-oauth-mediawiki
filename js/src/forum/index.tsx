@@ -13,8 +13,8 @@ app.initializers.add('songnguxyz/oauth-mediawiki', () => {
       return;
     }
 
-    // Check if username attribute exists
-    const username = provider.data.attributes?.username;
+    // Check if username attribute exists with defensive optional chaining
+    const username = provider.data?.attributes?.username;
 
     if (username) {
       // Add username field to the provider info items

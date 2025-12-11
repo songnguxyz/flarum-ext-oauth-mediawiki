@@ -43,6 +43,7 @@ return [
             }
 
             // Find the LoginProvider to get the username
+            // Note: $providerStatus->identifier is the LoginProvider's primary key (id)
             $loginProvider = LoginProvider::find($providerStatus->identifier);
 
             return [
