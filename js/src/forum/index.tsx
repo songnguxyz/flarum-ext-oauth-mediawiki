@@ -36,36 +36,20 @@ app.initializers.add('songnguxyz/oauth-mediawiki/forum', () => {
 
   extend(UserCard.prototype, 'infoItems', function (items: ItemList<Mithril.Children>) {
     const user = this.attrs.user;
-    const status = user.attribute<any>('mediawikiStatus');
+    const editCount = user.attribute<number | undefined>('mediawikiEditCount');
     const showStatus = app.forum.attribute<boolean>('songnguxyz-oauth-mediawiki.show_wiki_status');
 
-    if (!showStatus || !status) return;
+    if (!showStatus || editCount === undefined || editCount === null) return;
 
     const username = user.attribute<string | undefined>('mediawikiUsername');
 
-    const parts: string[] = [];
-
-    if (status.blocked) {
-      parts.push(app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.status.blocked'));
-
-      if (status.blockexpiry) {
-        parts.push(app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.status.blocked_until', { time: status.blockexpiry }));
-      }
-
-      if (status.blockreason) {
-        parts.push(app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.status.block_reason', { reason: status.blockreason }));
-      }
-    } else {
-      parts.push(app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.status.active'));
-    }
-
-    const label = app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.status.label', {
-      username: username || app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.status.unknown_username'),
+    const label = app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.edit_count.label', {
+      username: username || app.translator.trans('songnguxyz-oauth-mediawiki.forum.profile.edit_count.unknown_username'),
     });
 
     items.add(
-      'mediawiki-status',
-      <LabelValue label={label} value={parts.join(' \u00b7 ')} />,
+      'mediawiki-editcount',
+      <LabelValue label={label} value={editCount.toLocaleString()} />,
       50
     );
   });

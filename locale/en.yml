@@ -38,10 +38,6 @@ songnguxyz-oauth-mediawiki:
         linked_accounts:
             username_label: In-wiki username
         profile:
-            status:
-                label: 'MediaWiki status ({username})'
-                active: Account is active
-                blocked: Account is blocked
-                blocked_until: 'Blocked until: {time}'
-                block_reason: 'Reason: {reason}'
+            edit_count:
+                label: 'MediaWiki edits ({username})'
                 unknown_username: unknown

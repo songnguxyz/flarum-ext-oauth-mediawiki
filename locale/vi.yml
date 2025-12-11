@@ -38,10 +38,6 @@ songnguxyz-oauth-mediawiki:
         linked_accounts:
             username_label: 'Tên người dùng trên wiki'
         profile:
-            status:
-                label: 'Trạng thái MediaWiki ({username})'
-                active: 'Tài khoản đang hoạt động'
-                blocked: 'Tài khoản đã bị khóa'
-                blocked_until: 'Khóa đến: {time}'
-                block_reason: 'Lý do: {reason}'
+            edit_count:
+                label: 'Số sửa đổi MediaWiki ({username})'
                 unknown_username: 'không xác định'

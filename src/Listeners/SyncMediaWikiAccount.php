@@ -50,12 +50,7 @@ class SyncMediaWikiAccount
             $user->setPreference('songnguxyz-oauth-mediawiki.username', $username);
         }
 
-        $user->setPreference('songnguxyz-oauth-mediawiki.status', [
-            'blocked'     => $resource->isBlocked(),
-            'blockexpiry' => $resource->getBlockExpiry(),
-            'blockreason' => $resource->getBlockReason(),
-            'registered'  => $resource->getRegistered(),
-        ]);
+        $user->setPreference('songnguxyz-oauth-mediawiki.editcount', $resource->getEditCount());
 
         $user->save();
     }

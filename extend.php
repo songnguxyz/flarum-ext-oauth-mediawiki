@@ -34,7 +34,7 @@ return [
     (new Extend\ApiSerializer(UserSerializer::class))
         ->attributes(function (UserSerializer $serializer, $user, array $attributes) {
             $attributes['mediawikiUsername'] = $user->getPreference('songnguxyz-oauth-mediawiki.username');
-            $attributes['mediawikiStatus'] = $user->getPreference('songnguxyz-oauth-mediawiki.status');
+            $attributes['mediawikiEditCount'] = $user->getPreference('songnguxyz-oauth-mediawiki.editcount');
 
             return $attributes;
         }),
