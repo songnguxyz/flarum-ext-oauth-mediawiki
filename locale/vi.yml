@@ -25,6 +25,13 @@ fof-oauth:
         providers:
             mediawiki: 'MediaWiki'
 
+songnguxyz-oauth-mediawiki:
+    forum:
+        user:
+            settings:
+                linked-account:
+                    username-label: 'Tên người dùng MediaWiki'
+
     lib:
         providers:
             mediawiki: 'MediaWiki'
