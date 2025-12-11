@@ -11,7 +11,6 @@ fof-oauth:
                     client_secret_label: 'Khóa bí mật (Client Secret)'
                     user_agent_label: 'Tác nhân người dùng (User Agent)'
                     icon_label: 'Biểu tượng nhà cung cấp (FontAwesome)'
-                    show_wiki_status: 'Hiển thị trạng thái wiki trên hồ sơ người dùng'
 
     forum:
         log_in:
@@ -29,15 +28,3 @@ fof-oauth:
     lib:
         providers:
             mediawiki: 'MediaWiki'
-
-songnguxyz-oauth-mediawiki:
-    admin:
-        settings:
-            show_wiki_status: 'Hiển thị trạng thái tài khoản wiki trên hồ sơ người dùng'
-    forum:
-        linked_accounts:
-            username_label: 'Tên người dùng trên wiki'
-        profile:
-            edit_count:
-                label: 'Số sửa đổi MediaWiki ({username})'
-                unknown_username: 'không xác định'

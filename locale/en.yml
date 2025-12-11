@@ -11,7 +11,6 @@ fof-oauth:
                     client_secret_label: => fof-oauth.ref.settings.client_secret
                     user_agent_label: User Agent
                     icon_label: Provider Icon (FontAwesome class)
-                    show_wiki_status: Show wiki status on user profiles
 
     forum:
         log_in:
@@ -29,15 +28,3 @@ fof-oauth:
     lib:
         providers:
             mediawiki: MediaWiki
-
-songnguxyz-oauth-mediawiki:
-    admin:
-        settings:
-            show_wiki_status: Display wiki account status on user profiles
-    forum:
-        linked_accounts:
-            username_label: In-wiki username
-        profile:
-            edit_count:
-                label: 'MediaWiki edits ({username})'
-                unknown_username: unknown
