@@ -65,7 +65,7 @@ app.initializers.add('songnguxyz/oauth-mediawiki/forum', () => {
 
     items.add(
       'mediawiki-status',
-      <LabelValue label={label} value={parts.join(' ')} />,
+      <LabelValue label={label} value={parts.join(' \u00b7 ')} />,
       50
     );
   });
