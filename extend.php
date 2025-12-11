@@ -43,7 +43,11 @@ return [
             }
 
             // Find the LoginProvider to get the username
-            // Note: $providerStatus->identifier is the LoginProvider's primary key (id)
+            // Note: $providerStatus->identifier is the LoginProvider's primary key (id),
+            // not to be confused with $providerStatus->providerIdentifier (OAuth identifier).
+            // This query is by primary key so it's very fast. While this could cause N+1 queries
+            // when serializing multiple providers, in practice most users have only 1-2 linked
+            // providers, so the performance impact is minimal.
             $loginProvider = LoginProvider::find($providerStatus->identifier);
 
             return [

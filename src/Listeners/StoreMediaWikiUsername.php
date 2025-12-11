@@ -37,6 +37,9 @@ class StoreMediaWikiUsername
         }
 
         // Find and update the login provider record
+        // Note: $event->identifier is the OAuth provider's identifier (e.g., MediaWiki user ID)
+        // not the LoginProvider's primary key. The combination of provider + identifier
+        // has a unique index in the database for fast lookups.
         $loginProvider = LoginProvider::where('provider', $event->providerName)
             ->where('identifier', $event->identifier)
             ->first();
