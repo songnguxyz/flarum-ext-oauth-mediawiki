@@ -3,25 +3,29 @@ fof-oauth:
         settings:
             providers:
                 mediawiki:
-                    description: ''
+                    description: 'Configura l''aplicació MediaWiki OAuth2. Consulta
+                        la documentació a {link}'
 
-                    base_url_label: ''
-                    client_id_label: ''
-                    client_secret_label: ''
-                    user_agent_label: ''
-                    icon_label: ''
+                    base_url_label: 'URL de la base MediaWiki'
+                    client_id_label: 'Clau de Client'
+                    client_secret_label: '=> fof-oauth.ref.settings.client_secret'
+                    user_agent_label: 'Agent d''Usuari'
+                    icon_label: 'Icona de Proveïdor (FontAwesome classe)'
 
     forum:
         log_in:
-            with_mediawiki_button: ''
+            with_mediawiki_button: '=> fof-oauth.forum.log_in.with_button'
 
         error:
-            wiki_user_blocked: ''
-            invalid_email: ''
+            wiki_user_blocked: 'El teu compte MediaWiki s''ha bloquejat i no pots
+                accedir a aquest fòrum.'
+            invalid_email: 'No es pot recuperar l''adreça de correu electrònic del
+                teu compte MediaWiki. Si us plau, utilitza un altre mètode d''inici
+                de sessió.'
 
         providers:
-            mediawiki: ''
+            mediawiki: '=> fof-oauth.lib.providers.mediawiki'
 
     lib:
         providers:
-            mediawiki: ''
+            mediawiki: 'MediaWiki'
