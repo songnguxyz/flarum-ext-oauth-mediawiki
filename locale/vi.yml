@@ -19,8 +19,8 @@ fof-oauth:
         error:
             wiki_user_blocked: 'Tài khoản MediaWiki của bạn đã bị cấm và không được
                 phép đăng nhập vào trang này.'
-            invalid_email: 'Chưa thể lấy địa chỉ email từ tài khoản MediaWiki của bạn.
-                Vui lòng sử dụng phương thức đăng nhập khác.'
+            invalid_email: 'Chưa thể lấy địa chỉ email từ tài khoản MediaWiki của
+                bạn. Vui lòng sử dụng phương thức đăng nhập khác.'
 
         providers:
             mediawiki: 'MediaWiki'
