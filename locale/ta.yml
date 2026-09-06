@@ -3,25 +3,28 @@ fof-oauth:
         settings:
             providers:
                 mediawiki:
-                    description: ''
+                    description: 'உங்கள் MediaWiki OAuth2 பயன்பாட்டை உள்ளமைக்கவும்.
+                        ஆவணத்தை {link} இல் பார்க்கவும்'
 
-                    base_url_label: ''
-                    client_id_label: ''
-                    client_secret_label: ''
-                    user_agent_label: ''
-                    icon_label: ''
+                    base_url_label: 'மீடியாவிக்கி அடிப்படை முகவரி'
+                    client_id_label: 'வாங்கி திறவுகோல்'
+                    client_secret_label: '=> fof-oauth.ref.settings.client_secret'
+                    user_agent_label: 'பயனர் முகவர்'
+                    icon_label: 'வழங்குநர் படவுரு (FontAwesome வகுப்பு)'
 
     forum:
         log_in:
-            with_mediawiki_button: ''
+            with_mediawiki_button: '=> fof-oauth.forum.log_in.with_button'
 
         error:
-            wiki_user_blocked: ''
-            invalid_email: ''
+            wiki_user_blocked: 'உங்கள் மீடியாவிக்கி கணக்கு தடுக்கப்பட்டுள்ளது, மேலும்
+                நீங்கள் இந்த மன்றத்தில் உள்நுழைய முடியாது.'
+            invalid_email: 'உங்கள் மீடியாவிக்கி கணக்கிலிருந்து மின்னஞ்சல் முகவரியை
+                மீட்டெடுக்க முடியவில்லை. மற்றொரு உள்நுழைவு முறையைப் பயன்படுத்தவும்.'
 
         providers:
-            mediawiki: ''
+            mediawiki: '=> fof-oauth.lib.providers.mediawiki'
 
     lib:
         providers:
-            mediawiki: ''
+            mediawiki: 'மீடியாவிக்கி'
